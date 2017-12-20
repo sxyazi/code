@@ -1,0 +1,68 @@
+<audio src="Q.mp3" controls autoplay></audio>
+<canvas></canvas>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+}
+body {
+    background: rgba(0, 0, 0, 0.8);
+}
+audio {
+    display: none;
+}
+canvas {
+    position: absolute;
+    pointer-events: none;
+}
+</style>
+
+<script>
+
+const audioCxt = new AudioContext()
+
+// 音源
+const source = audioCxt.createMediaElementSource(document.querySelector('audio'))
+
+// 分析器
+const analyser = audioCxt.createAnalyser()
+source.connect(analyser)
+analyser.connect(audioCxt.destination)
+
+const render = cb => {
+
+    const canvas = document.querySelector('canvas')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    const { width, height } = canvas
+
+    analyser.fftSize = 1024
+    const arr = new Uint8Array(analyser.frequencyBinCount)
+
+    const ctx = canvas.getContext('2d')
+    const lineWidth = width / arr.length * 1.5
+    ctx.lineWidth = lineWidth
+
+    return () => {
+        analyser.getByteFrequencyData(arr)
+
+        ctx.clearRect(0, 0, width, height)
+        for (let i=0; i<arr.length; i++) {
+            ctx.beginPath()
+            ctx.strokeStyle = `hsl(${i * 360 / arr.length}, 100%, 50%)`
+            ctx.moveTo(i * lineWidth, height)
+            ctx.lineTo(i * lineWidth, height - arr[i] * 2)
+            ctx.stroke()
+        }
+
+        requestAnimationFrame(fn)
+    }
+
+}
+
+let fn
+fn = render(fn)
+fn()
+
+</script>
